@@ -4,6 +4,7 @@ import multer from "multer";
 import { router as resumeRouter } from "./routes.js";
 
 export const app = express();
+export default app;
 
 app.disable("x-powered-by");
 
