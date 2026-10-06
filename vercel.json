@@ -18,7 +18,7 @@
 
 "framework": "express",
 
-"entrypoint": "index.js"
+"entrypoint": "src/index.js"
 
 }
 
