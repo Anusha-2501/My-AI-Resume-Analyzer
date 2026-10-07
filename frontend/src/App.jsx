@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx']
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 function Icon({ name, className = 'h-5 w-5' }) {
   const shared = {
@@ -33,24 +32,26 @@ function Icon({ name, className = 'h-5 w-5' }) {
 function App() {
   const inputRef = useRef(null)
   const [file, setFile] = useState(null)
+  const [jobDescription, setJobDescription] = useState('')
   const [error, setError] = useState('')
   const [isDragging, setIsDragging] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [result, setResult] = useState(null)
 
   function selectFile(nextFile) {
     setError('')
-    setShowPreview(false)
+    setResult(null)
     if (!nextFile) return
 
     const extension = nextFile.name.split('.').pop()?.toLowerCase()
-    if (!ACCEPTED_EXTENSIONS.includes(extension)) {
+    if (extension !== 'pdf') {
       setFile(null)
-      setError('Please choose a PDF, DOC, or DOCX file.')
+      setError('Please choose a PDF file.')
       return
     }
     if (nextFile.size > MAX_FILE_SIZE) {
       setFile(null)
-      setError('Your resume needs to be smaller than 10 MB.')
+      setError('Your resume needs to be 5 MB or smaller.')
       return
     }
     setFile(nextFile)
@@ -66,6 +67,43 @@ function App() {
     return size < 1024 * 1024
       ? `${Math.max(1, Math.round(size / 1024))} KB`
       : `${(size / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setError('')
+    setResult(null)
+
+    if (!file) {
+      setError('Choose a PDF resume to continue.')
+      return
+    }
+    if (!jobDescription.trim()) {
+      setError('Paste the job description you want to compare against.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('resume', file)
+    formData.append('jobDescription', jobDescription)
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch('/api/resume', {
+        method: 'POST',
+        body: formData,
+      })
+      const body = await response.json()
+
+      if (!response.ok || !body.success) {
+        throw new Error(body.error?.message || 'The resume could not be analyzed.')
+      }
+      setResult(body.data)
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to reach the analysis service. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -145,7 +183,7 @@ function App() {
                 <input
                   ref={inputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept=".pdf,application/pdf"
                   className="sr-only"
                   aria-label="Choose your resume"
                   onChange={(event) => {
@@ -163,7 +201,7 @@ function App() {
                     <button
                       type="button"
                       className="mt-3 text-xs font-semibold text-[#6f8e43] underline decoration-[#c1d2a5] underline-offset-4 hover:text-[#415c22]"
-                      onClick={() => { setFile(null); setShowPreview(false); setError('') }}
+                      onClick={() => { setFile(null); setResult(null); setError('') }}
                     >
                       Choose a different file
                     </button>
@@ -186,33 +224,85 @@ function App() {
                 )}
               </div>
 
-              <p className={`mt-3 min-h-5 text-center text-xs ${error ? 'text-[#b5473b]' : 'text-[#92978d]'}`} role="status">
-                {error || 'PDF, DOC, or DOCX · Up to 10 MB'}
+              <label htmlFor="job-description" className="mb-2 mt-5 block text-sm font-semibold">
+                Job description
+              </label>
+              <textarea
+                id="job-description"
+                value={jobDescription}
+                onChange={(event) => { setJobDescription(event.target.value); setResult(null); setError('') }}
+                placeholder="Paste the job description here so we can compare its requirements with your resume."
+                rows={5}
+                maxLength={100000}
+                className="w-full resize-y rounded-xl border border-[#dfe3d8] bg-[#fafbf8] px-4 py-3 text-sm leading-6 outline-none transition placeholder:text-[#9a9f95] focus:border-[#91ad6a] focus:ring-2 focus:ring-[#d9f4a6]/60"
+                aria-describedby="job-description-help"
+              />
+              <p id="job-description-help" className="mt-1 text-xs text-[#92978d]">
+                Your resume and job description are analyzed for this request only.
+              </p>
+
+              <p className={`mt-3 min-h-5 text-center text-xs ${error ? 'text-[#b5473b]' : 'text-[#92978d]'}`} role={error ? 'alert' : 'status'}>
+                {error || 'Text PDFs and scanned PDFs · Up to 5 MB'}
               </p>
 
               <button
                 type="button"
-                disabled={!file}
-                onClick={() => setShowPreview(true)}
+                disabled={!file || !jobDescription.trim() || isSubmitting}
+                onClick={handleSubmit}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#20241f] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#363d32] disabled:cursor-not-allowed disabled:bg-[#d9ddd4] disabled:text-[#858a81]"
               >
-                Review my resume
-                <Icon name="arrow" className="h-4 w-4" />
+                {isSubmitting ? 'Analyzing your resume…' : 'Score my resume'}
+                {!isSubmitting && <Icon name="arrow" className="h-4 w-4" />}
               </button>
               <p className="mt-3 text-center text-[11px] leading-5 text-[#979c92]">
-                Frontend demo: your file stays in this browser and isn&apos;t uploaded.
+                Your PDF is processed in memory and isn&apos;t saved.
               </p>
 
-              {showPreview && (
-                <div className="mt-5 flex items-center gap-4 rounded-2xl border border-[#e3ebd8] bg-[#f6faef] p-4" role="status">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-[5px] border-[#c7e29b] text-lg font-bold tracking-[-0.06em] text-[#496a26]">
-                    82
+              {result && (
+                <section className="mt-5 rounded-2xl border border-[#e3ebd8] bg-[#f6faef] p-5" aria-live="polite" aria-label="Resume analysis results">
+                  <div className="flex items-center gap-4">
+                    <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border-[5px] border-[#c7e29b] text-xl font-bold tracking-[-0.06em] text-[#496a26]">
+                      {result.score}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Resume match score</p>
+                      <p className="mt-1 text-xs leading-5 text-[#737c69]">
+                        {result.matchedCount} of {result.totalKeywords} job-description keywords found in {result.fileName}.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">Your preview score</p>
-                    <p className="mt-1 text-xs leading-5 text-[#737c69]">This is a sample result. Connect an analysis service to review resume content.</p>
+                  <p className="mt-4 text-xs leading-5 text-[#737c69]">
+                    This score measures keyword overlap, not your overall qualifications. Review the job requirements and your experience together.
+                  </p>
+                  {result.matchedKeywords.length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#496a26]">Found in your resume</h3>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {result.matchedKeywords.map((keyword) => (
+                          <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#526943]">{keyword}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {result.missingKeywords.length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#7a6541]">Not found</h3>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {result.missingKeywords.map((keyword) => (
+                          <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#766546]">{keyword}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="mt-4">
+                    <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#496a26]">Suggestions</h3>
+                    <ul className="mt-2 space-y-2 text-xs leading-5 text-[#737c69]">
+                      {result.recommendations.map((recommendation) => (
+                        <li key={recommendation}>{recommendation}</li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
+                </section>
               )}
             </div>
 
@@ -220,7 +310,7 @@ function App() {
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#eff5e5] text-[#729a3e]">
                 <Icon name="shield" className="h-[18px] w-[18px]" />
               </span>
-              <span className="text-xs font-semibold leading-5">Private by design<br /><span className="font-normal text-[#858a81]">No upload. No storage.</span></span>
+              <span className="text-xs font-semibold leading-5">Private by design<br />              <span className="font-normal text-[#858a81]">Scans included · Never saved.</span></span>
             </div>
           </div>
         </section>
@@ -236,9 +326,9 @@ function App() {
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {[
-                ['01', 'Add your resume', 'Drop in a PDF or Word document to get the process moving.'],
-                ['02', 'Get your score', 'See a simple snapshot of how your resume is coming together.'],
-                ['03', 'Make your next move', 'Use helpful feedback to keep polishing your application.'],
+                ['01', 'Add your resume', 'Upload a PDF and paste in the job description you are targeting.'],
+                ['02', 'Get your score', 'See how many important job-description keywords appear in your resume.'],
+                ['03', 'Make your next move', 'Use the missing-keyword suggestions to tailor your application.'],
               ].map(([number, title, description]) => (
                 <article key={number} className="rounded-2xl border border-[#e8eae3] bg-[#fbfcf9] p-6 sm:p-7">
                   <span className="text-xs font-bold tracking-[0.12em] text-[#85a35b]">{number}</span>
@@ -253,7 +343,7 @@ function App() {
 
       <footer className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-6 py-7 text-xs text-[#90958b] sm:flex-row sm:items-center sm:justify-between sm:px-10 lg:px-12">
         <span className="font-semibold tracking-[-0.02em] text-[#596052]">nextpage</span>
-        <span>A frontend preview for your next career move.</span>
+        <span>Scanned PDFs supported with private, on-server text recognition.</span>
       </footer>
     </div>
   )

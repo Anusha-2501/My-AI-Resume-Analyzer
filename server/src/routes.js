@@ -3,13 +3,15 @@ import multer from "multer";
 import { uploadResume } from "./controller.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_JOB_DESCRIPTION_SIZE = 100 * 1024;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: MAX_FILE_SIZE,
     files: 1,
-    fields: 0,
-    parts: 1,
+    fields: 1,
+    fieldSize: MAX_JOB_DESCRIPTION_SIZE,
+    parts: 2,
   },
 });
 

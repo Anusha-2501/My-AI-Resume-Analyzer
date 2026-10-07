@@ -12,8 +12,16 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
     "express": "^5.2.1",
     "multer": "^2.4.0",
-    "pdf-parse": "^2.4.5"
+    "pdf-parse": "^2.4.5",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.0.10"
   }
 }
+
+
+

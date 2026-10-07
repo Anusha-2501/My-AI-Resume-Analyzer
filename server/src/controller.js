@@ -1,4 +1,8 @@
-import { extractResume, ResumeServiceError } from "./service.js";
+import {
+  extractResume,
+  ResumeServiceError,
+  scoreResume,
+} from "./service.js";
 
 export async function uploadResume(request, response) {
   if (!request.file) {
@@ -11,13 +15,28 @@ export async function uploadResume(request, response) {
     });
   }
 
+  const jobDescription = request.body?.jobDescription?.trim();
+  if (!jobDescription) {
+    return response.status(400).json({
+      success: false,
+      error: {
+        code: "JOB_DESCRIPTION_REQUIRED",
+        message: "Add the job description you want your resume scored against.",
+      },
+    });
+  }
+
   try {
-    const data = await extractResume(request.file);
+    const resume = await extractResume(request.file);
+    const analysis = scoreResume(resume.text, jobDescription);
 
     return response.json({
       success: true,
-      message: "Resume content extracted successfully.",
-      data,
+      message: "Resume analysis completed.",
+      data: {
+        fileName: resume.fileName,
+        ...analysis,
+      },
     });
   } catch (error) {
     if (error instanceof ResumeServiceError) {
