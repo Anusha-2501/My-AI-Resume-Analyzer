@@ -93,10 +93,34 @@ function App() {
         method: 'POST',
         body: formData,
       })
-      const body = await response.json()
+      const responseText = await response.text()
+      let body
+
+      try {
+        body = responseText ? JSON.parse(responseText) : null
+      } catch {
+        const statusMessage = `HTTP ${response.status}`
+        throw new Error(
+          response.ok
+            ? `The server returned an unreadable response (${statusMessage}). Please try again.`
+            : `The server could not complete the request (${statusMessage}). Check the server deployment logs if this continues.`,
+        )
+      }
+
+      if (!body) {
+        throw new Error(
+          `The server returned an empty response (HTTP ${response.status}). Check the server deployment logs if this continues.`,
+        )
+      }
 
       if (!response.ok || !body.success) {
-        throw new Error(body.error?.message || 'The resume could not be analyzed.')
+        throw new Error(
+          body.error?.message ||
+            `The resume could not be analyzed (HTTP ${response.status}).`,
+        )
+      }
+      if (!body.data) {
+        throw new Error('The server response did not include analysis results. Please try again.')
       }
       setResult(body.data)
     } catch (requestError) {
