@@ -1,7 +1,7 @@
 import {
+  compareResumeWithLabd,
   extractResume,
   ResumeServiceError,
-  scoreResume,
 } from "./service.js";
 
 export async function uploadResume(request, response) {
@@ -28,7 +28,7 @@ export async function uploadResume(request, response) {
 
   try {
     const resume = await extractResume(request.file);
-    const analysis = scoreResume(resume.text, jobDescription);
+    const analysis = await compareResumeWithLabd(resume.text, jobDescription);
 
     return response.json({
       success: true,

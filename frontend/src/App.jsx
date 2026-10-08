@@ -143,7 +143,7 @@ function App() {
 
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-[#555d50]">
               <span className="inline-flex items-center gap-2"><Icon name="check" className="h-4 w-4 text-[#769d41]" /> Clear, useful feedback</span>
-              <span className="inline-flex items-center gap-2"><Icon name="check" className="h-4 w-4 text-[#769d41]" /> Your file stays yours</span>
+              <span className="inline-flex items-center gap-2"><Icon name="check" className="h-4 w-4 text-[#769d41]" /> Secure server-side analysis</span>
             </div>
 
             <div className="mt-12 hidden items-center gap-4 border-t border-[#e5e7df] pt-6 lg:flex">
@@ -238,7 +238,7 @@ function App() {
                 aria-describedby="job-description-help"
               />
               <p id="job-description-help" className="mt-1 text-xs text-[#92978d]">
-                Your resume and job description are analyzed for this request only.
+                Resume text and the job description are sent to labd. Review its data-handling terms before sharing sensitive information.
               </p>
 
               <p className={`mt-3 min-h-5 text-center text-xs ${error ? 'text-[#b5473b]' : 'text-[#92978d]'}`} role={error ? 'alert' : 'status'}>
@@ -251,11 +251,11 @@ function App() {
                 onClick={handleSubmit}
                 className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#20241f] px-5 py-4 text-sm font-semibold text-white transition hover:bg-[#363d32] disabled:cursor-not-allowed disabled:bg-[#d9ddd4] disabled:text-[#858a81]"
               >
-                {isSubmitting ? 'Analyzing your resume…' : 'Score my resume'}
+                {isSubmitting ? 'Comparing your resume…' : 'Compare my resume'}
                 {!isSubmitting && <Icon name="arrow" className="h-4 w-4" />}
               </button>
               <p className="mt-3 text-center text-[11px] leading-5 text-[#979c92]">
-                Your PDF is processed in memory and isn&apos;t saved.
+                Your PDF is processed in memory and isn&apos;t saved by this app.
               </p>
 
               {result && (
@@ -267,16 +267,19 @@ function App() {
                     <div>
                       <p className="text-sm font-semibold">Resume match score</p>
                       <p className="mt-1 text-xs leading-5 text-[#737c69]">
-                        {result.matchedCount} of {result.totalKeywords} job-description keywords found in {result.fileName}.
+                        {result.matchedCount} of {result.totalKeywords} key requirements matched for {result.fileName}.
                       </p>
                     </div>
                   </div>
                   <p className="mt-4 text-xs leading-5 text-[#737c69]">
-                    This score measures keyword overlap, not your overall qualifications. Review the job requirements and your experience together.
+                    {result.summary} This AI-generated estimate is not a hiring decision; review the requirements and your experience together.
+                  </p>
+                  <p className="mt-2 text-[11px] text-[#858a81]">
+                    labd allowance: {result.creditsPercentLeft}% remaining
                   </p>
                   {result.matchedKeywords.length > 0 && (
                     <div className="mt-4">
-                      <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#496a26]">Found in your resume</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#496a26]">Relevant strengths</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {result.matchedKeywords.map((keyword) => (
                           <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#526943]">{keyword}</span>
@@ -286,7 +289,7 @@ function App() {
                   )}
                   {result.missingKeywords.length > 0 && (
                     <div className="mt-4">
-                      <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#7a6541]">Not found</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-[0.08em] text-[#7a6541]">Requirements to address</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {result.missingKeywords.map((keyword) => (
                           <span key={keyword} className="rounded-full bg-white px-2.5 py-1 text-xs text-[#766546]">{keyword}</span>
@@ -310,7 +313,7 @@ function App() {
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#eff5e5] text-[#729a3e]">
                 <Icon name="shield" className="h-[18px] w-[18px]" />
               </span>
-              <span className="text-xs font-semibold leading-5">Private by design<br />              <span className="font-normal text-[#858a81]">Scans included · Never saved.</span></span>
+              <span className="text-xs font-semibold leading-5">Processed in memory<br />              <span className="font-normal text-[#858a81]">Not saved by this app.</span></span>
             </div>
           </div>
         </section>
