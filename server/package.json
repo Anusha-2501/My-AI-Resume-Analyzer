@@ -14,6 +14,7 @@
   "dependencies": {
     "@tesseract.js-data/eng": "^1.0.0",
     "express": "^5.2.1",
+    "mongodb": "^7.7.0",
     "multer": "^2.4.0",
     "pdf-parse": "^2.4.5",
     "tesseract.js": "^7.0.0"
@@ -22,6 +23,3 @@
     "@napi-rs/canvas": "^1.0.10"
   }
 }
-
-
-

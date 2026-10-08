@@ -238,7 +238,7 @@ function App() {
                 aria-describedby="job-description-help"
               />
               <p id="job-description-help" className="mt-1 text-xs text-[#92978d]">
-                Resume text and the job description are sent to labd. Review its data-handling terms before sharing sensitive information.
+                Resume text and the job description are sent to labd. After analysis, the extracted text and score are saved in MongoDB. Avoid uploading sensitive information.
               </p>
 
               <p className={`mt-3 min-h-5 text-center text-xs ${error ? 'text-[#b5473b]' : 'text-[#92978d]'}`} role={error ? 'alert' : 'status'}>
@@ -255,7 +255,7 @@ function App() {
                 {!isSubmitting && <Icon name="arrow" className="h-4 w-4" />}
               </button>
               <p className="mt-3 text-center text-[11px] leading-5 text-[#979c92]">
-                Your PDF is processed in memory and isn&apos;t saved by this app.
+                Your extracted resume text, job description, and score are saved after analysis.
               </p>
 
               {result && (
@@ -313,7 +313,7 @@ function App() {
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#eff5e5] text-[#729a3e]">
                 <Icon name="shield" className="h-[18px] w-[18px]" />
               </span>
-              <span className="text-xs font-semibold leading-5">Processed in memory<br />              <span className="font-normal text-[#858a81]">Not saved by this app.</span></span>
+              <span className="text-xs font-semibold leading-5">Saved after analysis<br />              <span className="font-normal text-[#858a81]">Results stored in MongoDB.</span></span>
             </div>
           </div>
         </section>

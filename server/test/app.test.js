@@ -35,7 +35,21 @@ await new Promise((resolve) => labdServer.listen(0, "127.0.0.1", resolve));
 labdBaseUrl = `http://127.0.0.1:${labdServer.address().port}/v1/api/chat`;
 process.env.LABD_API_KEY = "test-labd-key";
 process.env.LABD_API_URL = labdBaseUrl;
-const { app } = await import("../src/index.js");
+const { createApp } = await import("../src/index.js");
+const { ResumeDatabaseError } = await import("../src/database.js");
+const savedAnalyses = [];
+let saveShouldFail = false;
+const app = createApp({
+  saveAnalysis: async (analysis) => {
+    if (saveShouldFail) {
+      throw new ResumeDatabaseError(
+        "MONGODB_SAVE_FAILED",
+        "The analysis could not be saved to the database. Please try again later.",
+      );
+    }
+    savedAnalyses.push(analysis);
+  },
+});
 
 function resetLabdMock() {
   labdStatus = 200;
@@ -50,6 +64,7 @@ function resetLabdMock() {
   });
   receivedLabdRequest = undefined;
   receivedLabdAuthorization = undefined;
+  savedAnalyses.length = 0;
 }
 
 let server;
@@ -182,6 +197,37 @@ test("sends the extracted resume and job description to labd for analysis", asyn
   assert.equal(body.data.summary, "Strong alignment with the role's core requirements.");
   assert.equal(body.data.creditsPercentLeft, 99);
   assert.deepEqual(body.data.missingKeywords, ["Node.js"]);
+  assert.equal(savedAnalyses.length, 1);
+  assert.equal(savedAnalyses[0].fileName, "resume.pdf");
+  assert.match(
+    savedAnalyses[0].resumeText,
+    /JavaScript developer React with testing experience/,
+  );
+  assert.match(savedAnalyses[0].jobDescription, /JavaScript developer with React/);
+  assert.equal(savedAnalyses[0].analysis.score, 84);
+});
+
+test("does not report success when the analysis cannot be saved", async () => {
+  resetLabdMock();
+  saveShouldFail = true;
+  let response;
+
+  try {
+    response = await fetch(`${baseUrl}/api/resume`, {
+      method: "POST",
+      body: uploadForm(
+        createPdf("JavaScript developer React with testing experience"),
+      ),
+    });
+  } finally {
+    saveShouldFail = false;
+  }
+
+  const body = await response.json();
+  assert.equal(response.status, 503);
+  assert.equal(body.success, false);
+  assert.equal(body.error.code, "MONGODB_SAVE_FAILED");
+  assert.equal(savedAnalyses.length, 0);
 });
 
 before(async () => {

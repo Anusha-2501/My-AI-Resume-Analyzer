@@ -1,24 +1,25 @@
 # Resume Analyzer API
 
-An Express API that accepts a PDF resume, extracts its text, and sends it with the job description to labd for an AI comparison. Uploaded files and results are kept in memory and are not saved by this app.
+An Express API that accepts a PDF resume, extracts its text, and sends it with the job description to labd for an AI comparison. It saves the extracted resume text, job description, filename, score, analysis details, and timestamp to MongoDB; the original PDF bytes are not stored.
 
-The request flow is split across `src/index.js` (Express app and server startup), `src/routes.js`, `src/controller.js`, and `src/service.js`. MongoDB is not configured, and resume data is not persisted.
+The request flow is split across `src/index.js` (Express app and server startup), `src/routes.js`, `src/controller.js`, `src/service.js`, and `src/database.js`.
 
 ## Requirements
 
 - Node.js 22.3 or newer
 - A labd API key
+- MongoDB Atlas username and password
 
 ## Run
 
-Set `LABD_API_KEY` in `.env` (the server loads `server/.env` automatically), then run:
+Set `LABD_API_KEY`, `MONGODB_USERNAME`, and `MONGODB_PASSWORD` in `.env` (the server loads `server/.env` automatically), then run:
 
 ```sh
 npm install
 npm run dev
 ```
 
-The server listens on port `3000` by default. Set `PORT` to use a different port.
+The server listens on port `3000` by default. Set `PORT` to use a different port. Analysis documents are saved to the `resume_analyzer.analyses` collection. Set `MONGODB_DATABASE` to override the database name. Existing deployments using `MONGO_DB_USERNAME` and `MONGO_DB_PASSWORD` are also supported.
 `LABD_API_URL` optionally overrides the default `https://agent.thedevlabs.io/v1/api/chat` endpoint. On deployments, configure these as server-side environment variables rather than committing `.env`.
 
 ## API
@@ -33,7 +34,7 @@ Example:
 curl -F "resume=@./resume.pdf" -F "jobDescription=Required skills and experience..." http://localhost:3000/api/resume
 ```
 
-Successful response:
+Successful response (the analysis is returned only after its MongoDB record is saved):
 
 ```json
 {

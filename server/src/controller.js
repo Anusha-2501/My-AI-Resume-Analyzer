@@ -3,52 +3,74 @@ import {
   extractResume,
   ResumeServiceError,
 } from "./service.js";
+import {
+  ResumeDatabaseError,
+  saveResumeAnalysis,
+} from "./database.js";
 
-export async function uploadResume(request, response) {
-  if (!request.file) {
-    return response.status(400).json({
-      success: false,
-      error: {
-        code: "RESUME_REQUIRED",
-        message: 'Upload a PDF file in the "resume" field.',
-      },
-    });
-  }
-
-  const jobDescription = request.body?.jobDescription?.trim();
-  if (!jobDescription) {
-    return response.status(400).json({
-      success: false,
-      error: {
-        code: "JOB_DESCRIPTION_REQUIRED",
-        message: "Add the job description you want your resume scored against.",
-      },
-    });
-  }
-
-  try {
-    const resume = await extractResume(request.file);
-    const analysis = await compareResumeWithLabd(resume.text, jobDescription);
-
-    return response.json({
-      success: true,
-      message: "Resume analysis completed.",
-      data: {
-        fileName: resume.fileName,
-        ...analysis,
-      },
-    });
-  } catch (error) {
-    if (error instanceof ResumeServiceError) {
-      return response.status(error.status).json({
+export function createUploadResumeHandler(saveAnalysis = saveResumeAnalysis) {
+  return async function uploadResume(request, response) {
+    if (!request.file) {
+      return response.status(400).json({
         success: false,
         error: {
-          code: error.code,
-          message: error.message,
+          code: "RESUME_REQUIRED",
+          message: 'Upload a PDF file in the "resume" field.',
         },
       });
     }
 
-    throw error;
-  }
+    const jobDescription = request.body?.jobDescription?.trim();
+    if (!jobDescription) {
+      return response.status(400).json({
+        success: false,
+        error: {
+          code: "JOB_DESCRIPTION_REQUIRED",
+          message: "Add the job description you want your resume scored against.",
+        },
+      });
+    }
+
+    try {
+      const resume = await extractResume(request.file);
+      const analysis = await compareResumeWithLabd(resume.text, jobDescription);
+      await saveAnalysis({
+        fileName: resume.fileName,
+        resumeText: resume.text,
+        jobDescription,
+        analysis,
+      });
+
+      return response.json({
+        success: true,
+        message: "Resume analysis completed.",
+        data: {
+          fileName: resume.fileName,
+          ...analysis,
+        },
+      });
+    } catch (error) {
+      if (error instanceof ResumeServiceError) {
+        return response.status(error.status).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        });
+      }
+
+      if (error instanceof ResumeDatabaseError) {
+        return response.status(503).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        });
+      }
+
+      throw error;
+    }
+  };
 }

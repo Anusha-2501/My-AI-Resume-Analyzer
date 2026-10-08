@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { uploadResume } from "./controller.js";
+import { createUploadResumeHandler } from "./controller.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_JOB_DESCRIPTION_SIZE = 100 * 1024;
@@ -15,6 +15,12 @@ const upload = multer({
   },
 });
 
-export const router = Router();
-
-router.post("/", upload.single("resume"), uploadResume);
+export function createResumeRouter({ saveAnalysis } = {}) {
+  const router = Router();
+  router.post(
+    "/",
+    upload.single("resume"),
+    createUploadResumeHandler(saveAnalysis),
+  );
+  return router;
+}
