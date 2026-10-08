@@ -1,3 +1,4 @@
+import "./pdfRuntime.js";
 import "./config.js";
 import { PDFParse } from "pdf-parse";
 import english from "@tesseract.js-data/eng";
