@@ -207,7 +207,14 @@ export async function extractResume(file) {
   try {
     let result;
     try {
-      result = await parser.getText({ pageJoiner: "" });
+      result = await parser.getText({ pageJoiner: "" }).catch((error) => {
+        console.error(
+          "PDF text extraction failed:",
+          error?.name || "UnknownError",
+          error?.message || "",
+        );
+        throw error;
+      });
     } catch {
       throw new ResumeServiceError(
         422,
@@ -240,7 +247,12 @@ export async function extractResume(file) {
           const { data } = await worker.recognize(screenshot.data);
           ocrTextByPage.set(screenshot.pageNumber, data.text.trim());
         }
-      } catch {
+      } catch (error) {
+        console.error(
+          "Scanned PDF OCR failed:",
+          error?.name || "UnknownError",
+          error?.message || "",
+        );
         throw new ResumeServiceError(
           422,
           "OCR_FAILED",
